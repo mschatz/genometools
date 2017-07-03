@@ -8,3 +8,7 @@
     make test
     make install
     export PERL5LIB="/work-zfs/mschatz1/mschatz/lib/perl5/site_perl/share/perl5"
+    
+
+## Alternative
+$ sudo cpan install Statistics::Descriptive
