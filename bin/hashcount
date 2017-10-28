@@ -1,0 +1,58 @@
+#!/usr/bin/perl -w
+use strict;
+
+my %types;
+my $sort = sub { $a cmp $b };
+my $showperc = 1;
+
+if (scalar @ARGV)
+{
+  my $f = shift @ARGV;
+
+  if ($f eq "-h")
+  {
+    print "Usage: hashcount.pl [options] data\n";
+    print "\n";
+    print "Options\n";
+    print "-------\n";
+    print "-n Sort numerically (low high)\n";
+    print "-N Sort frequency (high low)\n";
+
+    exit (0);
+  }
+  elsif ($f eq "-n")
+  {
+    $sort = sub { $a <=> $b };
+  }
+  elsif ($f eq "-N")
+  {
+    $sort = sub { $types{$b} <=> $types{$a} };
+  }
+  else
+  {
+    unshift @ARGV, $f;
+  }
+}
+
+my $all = 0;
+while (<>)
+{
+  chomp;
+  $types{$_}++;
+  $all++;
+}
+
+foreach my $t (sort $sort keys %types)
+{
+  my $count = $types{$t};
+
+  if ($showperc)
+  {
+    my $perc = sprintf("%0.02f", 100*$count/$all);
+    print "$t\t$count\t$perc%\n";
+  }
+  else
+  {
+    print "$t\t$count\n";
+  }
+}
