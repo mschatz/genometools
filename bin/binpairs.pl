@@ -6,7 +6,7 @@ my $USAGE = "binpairs.pl binsize < pairs > bins.txt\n";
 ## plot with this in R
 ## t<-read.table("scaffolds85.b100k.txt")
 ## m<-as.matrix(t)
-## image(m)
+## image(-log(1+m,10), main="scaffoldXXX 100kb bins")
 
 my $binsize = shift @ARGV or die $USAGE;
 
