@@ -1,7 +1,7 @@
 #!/usr/bin/perl 
 use strict;
 
-my $USAGE = "binpairs.pl binsize < pairs > bins.txt\n";
+my $USAGE = "binpairs.pl [-z] binsize < pairs > bins.txt\n";
 
 ## plot with this in R
 ## t<-read.table("scaffolds85.b100k.txt")
@@ -11,6 +11,13 @@ my $USAGE = "binpairs.pl binsize < pairs > bins.txt\n";
 ## dev.off()
 
 my $binsize = shift @ARGV or die $USAGE;
+
+my $ZEROSELF=0;
+if ($binsize eq "-z")
+{
+  $ZEROSELF=1;
+  $binsize = shift @ARGV or die $USAGE;
+}
 
 my %counts;
 
@@ -44,6 +51,11 @@ for (my $b1 = 0; $b1 <= $maxbin; $b1++)
     if (exists $counts{$b1}->{$b2})
     {
       $c = $counts{$b1}->{$b2};
+    }
+
+    if (($b1 == $b2) && ($ZEROSELF))
+    {
+      $c = 0;
     }
 
     print $c;
