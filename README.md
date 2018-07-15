@@ -12,3 +12,7 @@
 
 ## Alternative
 $ sudo cpan install Statistics::Descriptive
+
+
+## Conda
+$ conda install -c bioconda perl-statistics-descriptive 
