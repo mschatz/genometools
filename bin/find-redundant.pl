@@ -29,6 +29,7 @@ my %contigs;
 while (<COORDS>)
 {
   $alignments++;
+  if (($alignments % 10000) == 0) { print STDERR "  processed $alignments alignments\n"; }
 
   chomp;
   my @vals = split /\s+/, $_;
@@ -83,12 +84,16 @@ print STDERR "Processed $alignments alignment records [$validalignments valid]\n
 
 my $numcontigs = scalar keys %contigs;
 my $totaledges = 0;
+my $ctgcount = 0;
 
 print STDERR "Finding chains for $numcontigs contigs...\n";
 
 ## process from smallest to biggest, so that bigger contigs are preferred to be kept
 foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contigs)
 {
+  $ctgcount++;
+  if (($ctgcount % 1000) == 0) { print STDERR "  processed $ctgcount contigs...\n"; }
+
   if (exists $contigs{$ctg}->{align})
   {
     my $clen = $contigs{$ctg}->{len};
@@ -206,9 +211,11 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
 
             ## start a DFS at node i to explore chains passing through it
             my $path;
-            $path->{chainstart} = $align[$i]->{rstart};
-            $path->{chainend}   = $align[$i]->{rend};
-            $path->{dir}        = $dir;
+            $path->{chainstart}  = $align[$i]->{rstart};
+            $path->{chainend}    = $align[$i]->{rend};
+            $path->{chainweight} = $align[$i]->{alenr};
+            $path->{dir}         = $dir;
+
             push @{$path->{nodes}}, $i;
 
             my $bestspani = -1;
@@ -234,10 +241,17 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
                   push @nodes, $e;
                   my $newpath;
                   $newpath->{nodes} = \@nodes;
+                  $newpath->{dir} = $dir;
+
                   $newpath->{chainstart} = $path->{chainstart};
                   $newpath->{chainend}   = $path->{chainend};
-                  $newpath->{dir} = $dir;
                   if ($align[$e]->{rend} > $newpath->{chainend}) { $newpath->{chainend} = $align[$e]->{rend}; }
+
+                  my $newstart = $align[$e]->{rstart};
+                  if ($path->{chainend} > $newstart) { $newstart = $path->{chainend}; }
+                  my $newbases = $path->{rend} - $newstart + 1;
+                  $newpath->{chainweight} = $path->{chainweight} + $newbases;
+
                   push @stack, $newpath;
                 }
               }
@@ -247,6 +261,10 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
                 my $chainstart = $path->{chainstart};
                 my $chainend   = $path->{chainend};
                 my $chainspan  = $chainend - $chainstart + 1;
+                my $chainweight = $path->{chainweight};
+
+                ## override span with weight
+                $chainspan = $chainweight;
 
                 if ($chainspan > $bestspani)
                 {
@@ -263,7 +281,8 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
 
               if (defined $bestpathi)
               {
-                print "\t|\t$bestpathi->{chainstart}\t$bestpathi->{chainend}\t|\t";
+                my $span = $bestpathi->{chainend} - $bestpathi->{chainstart} + 1;
+                print "\t|\t$bestpathi->{chainstart}\t$bestpathi->{chainend}\t[$span]\t|\t";
                 foreach my $n (@{$bestpathi->{nodes}})
                 {
                   print "\t<$n$dir>";
@@ -293,7 +312,9 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
         if (defined $bestpathall)
         {
           my $dir = $bestpathall->{dir};
-          print "\t$dir\t|\t$bestpathall->{chainstart}\t$bestpathall->{chainend}\t|\t";
+          my $span = $bestpathall->{chainend} - $bestpathall->{chainstart} + 1;
+
+          print "\t$dir\t|\t$bestpathall->{chainstart}\t$bestpathall->{chainend}\t[$span]\t|\t";
           foreach my $n (@{$bestpathall->{nodes}})
           {
             print "\t<$n$dir>";
@@ -312,6 +333,16 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
           print "\n\n";
         }
       }
+
+      if (defined $bestpathall)
+      {
+        my $chain;
+        $chain->{rstart} = $bestpathall->{chainstart};
+        $chain->{rend}   = $bestpathall->{chainend};
+        $chain->{qid}    = $qid;
+
+        push @{$contigs{$ctg}->{chain}}, $chain;
+      }
     }
   }
 }
@@ -322,6 +353,8 @@ print STDERR "Found $totaledges total edges\n";
 
 ## Look for jointly contained contigs
 ###############################################################################
+
+print STDERR "Looking for contained contigs...\n";
 
 my $jointcontained = 0;
 
