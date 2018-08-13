@@ -249,7 +249,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
 
                   my $newstart = $align[$e]->{rstart};
                   if ($path->{chainend} > $newstart) { $newstart = $path->{chainend}; }
-                  my $newbases = $path->{rend} - $newstart + 1;
+                  my $newbases = $align[$e]->{rend} - $newstart + 1;
                   $newpath->{chainweight} = $path->{chainweight} + $newbases;
 
                   push @stack, $newpath;
