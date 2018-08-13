@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use Time::HiRes qw/gettimeofday/;
 
 #open COORDS, "show-coords -rclH $delta |" 
 #  or die "Can't run show-coords -rclH $delta\n";
@@ -86,6 +87,11 @@ my $numcontigs = scalar keys %contigs;
 my $totaledges = 0;
 my $ctgcount = 0;
 
+my $constructtime = 0;
+my $searchtime = 0;
+my $stackadd = 0;
+my $lasttime = 0;
+
 print STDERR "Finding chains for $numcontigs contigs...\n";
 
 ## process from smallest to biggest, so that bigger contigs are preferred to be kept
@@ -128,6 +134,8 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
             }
           }
 
+          ## Find all of the compatible edges
+          $lasttime = gettimeofday;
           for (my $i = 0; $i < scalar @align; $i++)
           {
             for (my $j = 0; $j < $i; $j++)
@@ -187,6 +195,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
                }
             }
           }
+          $constructtime += (gettimeofday - $lasttime);
 
           if ($PATHVERBOSE)
           {
@@ -205,6 +214,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
           }
 
           ## find the longest chain starting at each node (if not already visited)
+          $lasttime = gettimeofday;
           for (my $i = 0; $i < scalar @align; $i++)
           {
             next if exists $align[$i]->{visit};
@@ -223,6 +233,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
 
             my @stack;
             push @stack, $path;
+            $stackadd++;
 
             while (scalar @stack > 0)
             {
@@ -232,7 +243,15 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
               my $lastnode  = $path->{nodes}->[$pathlen-1];
               $align[$lastnode]->{visit}++;
 
-              if (exists $align[$lastnode]->{edge})
+              my $betterpath = 0;
+              if ((!exists $align[$lastnode]->{chainweight}) ||
+                  ($path->{chainweight} > $align[$lastnode]->{chainweight}))
+              {
+                $betterpath = 1;
+                $align[$lastnode]->{chainweight} = $path->{chainweight};
+              }
+
+              if (($betterpath) && (exists $align[$lastnode]->{edge}))
               {
                 ## If I can keep extending, extend with all children
                 foreach my $e (@{$align[$lastnode]->{edge}})
@@ -253,6 +272,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
                   $newpath->{chainweight} = $path->{chainweight} + $newbases;
 
                   push @stack, $newpath;
+                  $stackadd++;
                 }
               }
               else
@@ -298,6 +318,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
               $bestpathall = $bestpathi;
             }
           }
+          $searchtime += (gettimeofday - $lasttime);
         }
       }
             
@@ -347,7 +368,7 @@ foreach my $ctg (sort {$contigs{$a}->{len} <=> $contigs{$b}->{len}} keys %contig
   }
 }
 
-print STDERR "Found $totaledges total edges\n";
+print STDERR "Found $totaledges total edges [$constructtime constructtime, $searchtime searchtime, $stackadd stackadd]\n";
 
 
 
