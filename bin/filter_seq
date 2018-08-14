@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use FileHandle;
 
-my $USAGE = "Usage: filter_seq [-index seq.fa] subset.fa all.fa\n";
+my $USAGE = "Usage: filter_seq [-index seq.fa] [-v] subset.fa all.fa\n";
 
 my $HELPTEXT = qq~
 Extract specified fasta records listed in subset.fa from a master file all.fa. 
@@ -15,10 +15,12 @@ by running 'filter_seq -index all.fa'.
   Options
   -------
   -index Create an index file of the fasta file\n
+  -v     skip everything listed in the subset.fa file\n
 ~;
 
 
 my $createindex = 0;
+my $skiplisted = 0;
 
 my $good = shift @ARGV or die $USAGE;
 
@@ -30,6 +32,12 @@ elsif ($good eq "-index")
 {
   $createindex = 1;
   $good = shift @ARGV or die $USAGE;
+}
+elsif ($good eq "-v")
+{
+  $skiplisted = 1;
+  $good = shift @ARGV or die $USAGE;
+  print STDERR "Skipping everything listed in $good\n";
 }
 
 
@@ -73,7 +81,7 @@ else
   }
   close GOOD;
 
-  if (-r "$copy.idx")
+  if ((!$skiplisted) && (-r "$copy.idx"))
   {
     ## Create the index as: grep -b '>' tvg2.qual | tr -d ':' | tr  '>' ' ' | awk '{print $2" "$1}' > tvg2.qual.idx
     my %offsettable;
@@ -130,6 +138,7 @@ else
       if (/^\>(\S+)/)
       {
         $printid = $sequencelist{$1};
+        if ($skiplisted) { $printid = !$printid; }
         $sequencelist{$1} = 0;
       }
 
