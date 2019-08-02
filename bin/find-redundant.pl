@@ -11,7 +11,7 @@ my $coordsfile   = shift @ARGV or die $USAGE;
 my $MIN_PERC_ID  = shift @ARGV or die $USAGE;
 my $MIN_PERC_COV = shift @ARGV or die $USAGE;
 
-my $MAX_CHAIN_DIST = 25000;
+my $MAX_CHAIN_DIST = 20000;
 
 my $VERBOSE = 1;
 my $PATHVERBOSE = 0;
