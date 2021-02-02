@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+use lib "/seq/schatz/bluearc_backup/schatz/mschatz/devel/amos/lib";
+
 use strict;
 use Getopt::Long;
 use Statistics::Descriptive;
