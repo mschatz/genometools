@@ -1,0 +1,22 @@
+activity "activity: window ~%"
+vbell_msg "bell: window ~%"
+vbellwait 2
+allpartial off
+autodetach on
+nonblock on
+shelltitle "$ |"
+defflow off
+defmode 0620
+defscrollback 50000
+startup_message off
+
+#escape ^Qq
+
+# Allow bold colors
+#attrcolor b ".I"
+
+bind ',' prev
+bind '.' next
+
+hardstatus alwayslastline
+hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B} %d/%m %{W}%c %{g}]'
