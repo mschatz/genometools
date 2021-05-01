@@ -1,0 +1,47 @@
+set nocp
+set nowrap
+set ignorecase
+set showmatch
+set shiftwidth=2
+set tabstop=2
+" set co=80
+set expandtab
+set incsearch
+set hlsearch
+set ai
+set aw
+set history=50
+set smartindent
+set backspace=indent,eol,start
+set ruler
+set ts=4
+
+map <Up> gk
+imap <Up> <C-o>gk
+map <Down> gj
+imap <Down> <C-o>gj
+
+map <S-Insert> <MiddleMouse>
+imap <S-Insert> <MiddleMouse>
+
+colors default
+set guifont=courier
+
+" Press F2 to word-wrap a block of text. It's almost like using Word
+" Star all over again.
+
+map #2 !}fmt -80<return>
+set wm=2
+map #3 make
+
+syn on
+set statusline=%<%f\ %h%m%r%=%-14.(%l,%c%V%)\ %P
+set noswapfile
+set nobackup
+set nowritebackup
+set nofsync 
+
+
+
+
+
