@@ -20,7 +20,9 @@ if not os.path.isdir(folder_path):
     sys.exit(1)
 
 # Get all image files in the folder (JPG, JPEG, PNG)
-image_files = glob.glob(os.path.join(folder_path, "*.[JjPp][PpNn][GgGg]"))  # Matches JPG, PNG, etc.
+image_files = glob.glob(os.path.join(folder_path, "*.jpg")) + \
+              glob.glob(os.path.join(folder_path, "*.jpeg")) + \
+              glob.glob(os.path.join(folder_path, "*.png"))
 random.shuffle(image_files)
 if not image_files:
     print(f"No images found in {folder_path}")
@@ -40,9 +42,7 @@ root.title("Image Slideshow")
 # Function to correct image orientation based on EXIF data
 def correct_orientation(image):
     try:
-        for orientation in ExifTags.TAGS.keys():
-            if ExifTags.TAGS[orientation] == 'Orientation':
-                break
+        orientation = next((k for k, v in ExifTags.TAGS.items() if v == 'Orientation'), None)
         exif = image._getexif()
         if exif is not None:
             orientation_value = exif.get(orientation, None)
@@ -63,26 +63,8 @@ def resize_image(image, max_width, max_height):
     new_size = (int(width * ratio), int(height * ratio))
     return image.resize(new_size, Image.Resampling.LANCZOS)
 
-# Function to fade transition between images
-def fade_transition(new_img, alpha=0.0):
-    if alpha == 0:
-        label.config(image=new_img)
-        label.image = new_img
-    if alpha < 1:
-        root.attributes('-alpha', alpha)
-        root.after(50, lambda: fade_transition(new_img, min(alpha + 0.1, 1)))
-    else:
-        root.attributes('-alpha', 1.0)
-        label.config(image=new_img)
-        label.image = new_img
-        root.after(SLIDE_DELAY, show_next_image)
-
 # Function to update image
-def show_next_image():
-    global index, paused
-    if paused:
-        return
-    
+def update_image():
     try:
         img = Image.open(image_files[index])
         img = correct_orientation(img)
@@ -90,26 +72,51 @@ def show_next_image():
         img = ImageTk.PhotoImage(img)
     except Exception as e:
         print(f"Error loading image {image_files[index]}: {e}")
-        index = (index + 1) % len(image_files)
-        root.after(SLIDE_DELAY, show_next_image)
         return
     
-    fade_transition(img)
+    label.config(image=img)
+    label.image = img
+    filename_label.config(text=f"{os.path.basename(image_files[index])} ({index + 1}/{len(image_files)})")
+
+# Function to show next image
+def show_next_image():
+    global index, paused
+    if paused:
+        return
     index = (index + 1) % len(image_files)
+    update_image()
+
+# Function to show previous image
+def show_prev_image():
+    global index, paused
+    if paused:
+        return
+    index = (index - 1) % len(image_files)
+    update_image()
 
 # Create a label to display images
 label = tk.Label(root, bg='black')
 label.pack(expand=True)
 
-show_next_image()
+# Create a label to display filename and index
+filename_label = tk.Label(root, bg='black', fg='white', font=("Arial", 14))
+filename_label.pack(side='bottom', fill='x')
 
+update_image()
+root.after(SLIDE_DELAY, show_next_image)
+
+# Toggle pause function
 def toggle_pause(event=None):
     global paused
     paused = not paused
-    if not paused:
-        show_next_image()
 
+# Bind keys
 root.bind('<Escape>', lambda e: root.destroy())
+root.bind('<q>', lambda e: root.destroy())
 root.bind('<space>', toggle_pause)
+root.bind('<Right>', lambda e: show_next_image())
+root.bind('<Left>', lambda e: show_prev_image())
+root.bind('<i>', lambda e: filename_label.config(text=f"{os.path.basename(image_files[index])} ({index + 1}/{len(image_files)})"))
+
 root.mainloop()
 
