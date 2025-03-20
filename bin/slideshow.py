@@ -30,6 +30,7 @@ index = 0
 paused = False
 MAX_WIDTH = 1024
 MAX_HEIGHT = 768
+SLIDE_DELAY = 15000
 
 # Setup Tkinter window
 root = tk.Tk()
@@ -74,7 +75,7 @@ def fade_transition(new_img, alpha=0.0):
         root.attributes('-alpha', 1.0)
         label.config(image=new_img)
         label.image = new_img
-        root.after(3000, show_next_image)
+        root.after(SLIDE_DELAY, show_next_image)
 
 # Function to update image
 def show_next_image():
@@ -90,7 +91,7 @@ def show_next_image():
     except Exception as e:
         print(f"Error loading image {image_files[index]}: {e}")
         index = (index + 1) % len(image_files)
-        root.after(3000, show_next_image)
+        root.after(SLIDE_DELAY, show_next_image)
         return
     
     fade_transition(img)
